@@ -10,7 +10,12 @@ Elite Dangerous oyuncuları için geliştirilmiş, şeffaf, oyun penceresinin ü
 * **Oyun İçi Kullanım:** Şeffaf arkaplanı sayesinde oyun ekranını kapatmaz, ekranda sol tık ile istenilen yere sürüklenebilir.
 
 ## 📸 Ekran Görüntüleri
-Eklenecek
+![HUD Görünümü](1.png)
+![Market Görünümü](2.png)
+![Donate Görünmeme Sorunu Çözümü](3.png)
+![Eksik Materyalin Belirtilmesi Bkz: Advanced Medicines](4.png)
+
+
 
 ## 📥 Nasıl Kurulur ve Kullanılır?
 

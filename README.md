@@ -2,6 +2,9 @@
 
 Elite Dangerous oyuncuları için geliştirilmiş, şeffaf, oyun penceresinin üstünde durabilen (Always on Top) ve anlık olarak görev ve kargo takibi yapan hafif bir HUD aracıdır. Oyun loglarını (`Journal` ve `Cargo.json`) anlık okuyarak çalışır.
 
+## Güncellemeler
+* **v1.0.1:** Bir gün önce eklenmiş olan görevler gözümüyordu, düzeltildi.
+
 ## 🌟 Özellikler
 * **Anlık Görev Takibi:** Alınan teslimat ve bağış görevlerini otomatik listeler.
 * **Akıllı İhtiyaç Listesi:** Tüm görevler için gereken toplam mal miktarını hesaplar.

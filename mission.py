@@ -100,6 +100,58 @@ class EDMissionHUD(QWidget):
         if not name: return ""
         return name.replace("$", "").replace("_Name;", "").replace(";", "").lower().strip()
 
+    def process_journal_event(self, data):
+        event = data.get('event')
+
+        if event == 'Loadout':
+            self.max_cargo = data.get('CargoCapacity', self.max_cargo)
+
+        elif event == 'MissionAccepted':
+            item = data.get('Commodity_Localised') or data.get('Commodity')
+            if item:
+                station = data.get('DestinationStation', 'Bağış / Mevcut İstasyon')
+                self.missions[data['MissionID']] = {
+                    'item': self.clean_name(item),
+                    'total_req': data.get('Count', 1),
+                    'delivered': 0,
+                    'station': station
+                }
+
+        elif event == 'CargoDepot' and data.get('UpdateType') == 'Deliver':
+            m_id = data['MissionID']
+            if m_id in self.missions:
+                self.missions[m_id]['delivered'] = data.get('Count', 0)
+
+        elif event in ['MissionCompleted', 'MissionAbandoned', 'MissionFailed']:
+            self.missions.pop(data.get('MissionID'), None)
+
+    def rebuild_state_from_recent_logs(self, current_log, keep_last_logs=2):
+        """Aktif görevi kaçırmamak için son birkaç journal dosyasını baştan tarar."""
+        all_logs = sorted(glob.glob(os.path.join(os.path.dirname(current_log), 'Journal.*.log')), key=os.path.getmtime)
+        if not all_logs:
+            self.missions = {}
+            return
+
+        if current_log in all_logs:
+            idx = all_logs.index(current_log)
+            start = max(0, idx - (keep_last_logs - 1))
+            logs_to_parse = all_logs[start:idx + 1]
+        else:
+            logs_to_parse = all_logs[-keep_last_logs:]
+
+        self.missions = {}
+
+        for log_path in logs_to_parse:
+            try:
+                with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        try:
+                            self.process_journal_event(json.loads(line))
+                        except:
+                            continue
+            except:
+                continue
+
     def tick(self):
         log_file, cargo_file, market_file = self.get_ed_paths()
         if not log_file: return
@@ -107,8 +159,12 @@ class EDMissionHUD(QWidget):
         if log_file != self.last_log_file:
             self.last_log_file = log_file
             if self.file_handle: self.file_handle.close()
+
+            # Gece yarısı yeni log'a geçildiğinde dünkü aktif görevleri de koru.
+            self.rebuild_state_from_recent_logs(log_file, keep_last_logs=2)
+
             self.file_handle = open(log_file, 'r', encoding='utf-8', errors='ignore')
-            self.missions = {}
+            self.file_handle.seek(0, os.SEEK_END)
 
         self.available_market_stock = {}
         if os.path.exists(market_file):
@@ -126,29 +182,7 @@ class EDMissionHUD(QWidget):
             if not line: break
             try:
                 data = json.loads(line)
-                event = data.get('event')
-                
-                if event == 'Loadout':
-                    self.max_cargo = data.get('CargoCapacity', self.max_cargo)
-
-                elif event == 'MissionAccepted':
-                    item = data.get('Commodity_Localised') or data.get('Commodity')
-                    if item:
-                        station = data.get('DestinationStation', 'Bağış / Mevcut İstasyon')
-                        self.missions[data['MissionID']] = {
-                            'item': self.clean_name(item), 
-                            'total_req': data.get('Count', 1),
-                            'delivered': 0,
-                            'station': station
-                        }
-                
-                elif event == 'CargoDepot' and data.get('UpdateType') == 'Deliver':
-                    m_id = data['MissionID']
-                    if m_id in self.missions:
-                        self.missions[m_id]['delivered'] = data.get('Count', 0)
-
-                elif event in ['MissionCompleted', 'MissionAbandoned', 'MissionFailed']:
-                    self.missions.pop(data.get('MissionID'), None)
+                self.process_journal_event(data)
             except: continue
 
         cargo = {}
